@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => dash._all());
 .sc-take { font-size: var(--cds-font-size-body); margin:0 0 var(--cds-pad-lg); max-width: 62rem; color: rgba(255,255,255,.88); }
 .sc .sc-take b, .sc .sc-kpi b { font-weight: 600; }
 .sc-take b { color: var(--sc-turq2); }
-.sc-kpis { display:grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr)); gap: var(--cds-gap-md); position:relative; z-index:1; }
+.sc-kpis { display:grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr)); gap: var(--cds-gap-md); position:relative; z-index:1; }
 .sc-kpi { background: rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14); border-radius: var(--cds-radius); padding: var(--cds-pad-md); }
 .sc-kpi.main { background: var(--sc-turq); border-color: var(--sc-turq); }
 .sc-kpi-l { font-size: var(--cds-font-size-caption); color: rgba(255,255,255,.78); margin:0 0 var(--cds-gap-xs); }
@@ -124,6 +124,8 @@ document.addEventListener('DOMContentLoaded', () => dash._all());
       <div class="sc-kpi"><p class="sc-kpi-l">Participação do canal digital</p><p class="sc-kpi-v" data-draw="val" data-fmt="pct2" data-source="origem" data-field="participacao" data-where="origem=ADG">—</p><p class="sc-kpi-n">Sobre todas as propostas homologadas</p></div>
       <div class="sc-kpi"><p class="sc-kpi-l">Último dia</p><p class="sc-kpi-v" data-draw="val" data-source="periodo" data-field="ultimo_dia">—</p><p class="sc-kpi-n">Adesões em <span data-draw="val" data-fmt="date" data-source="periodo" data-field="fim">—</span></p></div>
       <div class="sc-kpi"><p class="sc-kpi-l">Média por dia</p><p class="sc-kpi-v" data-draw="val" data-source="periodo" data-field="media_dia">—</p><p class="sc-kpi-n">Em <span data-draw="val" data-source="periodo" data-field="dias">—</span> dias analisados</p></div>
+      <div class="sc-kpi"><p class="sc-kpi-l">Dia com maior adesão</p><p class="sc-kpi-v" data-draw="val" data-source="extremos" data-field="adesoes_digitais" data-where="tipo=maior">—</p><p class="sc-kpi-n"><span data-draw="val" data-source="extremos" data-field="dia_semana" data-where="tipo=maior">—</span>, <span data-draw="val" data-fmt="date" data-source="extremos" data-field="data" data-where="tipo=maior">—</span></p></div>
+      <div class="sc-kpi"><p class="sc-kpi-l">Dia com menor adesão</p><p class="sc-kpi-v" data-draw="val" data-source="extremos" data-field="adesoes_digitais" data-where="tipo=menor">—</p><p class="sc-kpi-n"><span data-draw="val" data-source="extremos" data-field="dia_semana" data-where="tipo=menor">—</span>, <span data-draw="val" data-fmt="date" data-source="extremos" data-field="data" data-where="tipo=menor">—</span></p></div>
       <div class="sc-kpi"><p class="sc-kpi-l">Cooperativas com adesão</p><p class="sc-kpi-v" data-draw="val" data-source="totais" data-field="cooperativas">—</p><p class="sc-kpi-n">Em <span data-draw="val" data-source="totais" data-field="centrais">—</span> centrais</p></div>
     </div>
   </header>
@@ -253,6 +255,12 @@ dash.calc('periodo', {
   title: 'Período analisado',
   description: 'Primeiro e último dia com adesão digital, número de dias, adesões do último dia e média de adesões por dia.',
   fn: (por_dia) => { const ds = por_dia.map((r) => r.data).sort(); const tot = por_dia.reduce((a, r) => a + +r.adesoes_digitais, 0); const ult = por_dia.find((r) => r.data === ds[ds.length - 1]); return [{dias: ds.length, inicio: ds[0], fim: ds[ds.length - 1], ultimo_dia: ult ? +ult.adesoes_digitais : 0, media_dia: ds.length ? Math.round(tot / ds.length) : 0}]; }
+});
+dash.calc('extremos', {
+  inputs: ['por_dia'],
+  title: 'Dias com maior e menor adesão',
+  description: 'Entre os dias completos (exclui o dia parcial da extração), o dia com mais e o dia com menos adesões digitais.',
+  fn: (por_dia) => { const c = por_dia.filter((r) => String(r.observacao).startsWith('Dia completo')).map((r) => ({data: r.data, dia_semana: r.dia_semana, adesoes_digitais: +r.adesoes_digitais})); if (!c.length) return []; const mx = c.reduce((a, b) => b.adesoes_digitais > a.adesoes_digitais ? b : a); const mn = c.reduce((a, b) => b.adesoes_digitais < a.adesoes_digitais ? b : a); return [Object.assign({tipo: 'maior'}, mx), Object.assign({tipo: 'menor'}, mn)]; }
 });
 dash.calc('totais', {
   inputs: ['por_cooperativa'],
